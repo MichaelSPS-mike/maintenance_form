@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import time
 from typing import Any
 import streamlit_cookies_manager as scm
+import streamlit.components.v1 as components
+
 
 # Page config
 st.set_page_config(page_title="Form Maintenance", page_icon="🔧", layout="wide")
@@ -475,7 +477,12 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
 
 def show_step_2_form(configs):
     """Step 2 Substep 1: Equipment Form"""
-    
+    components.html("""
+    <script>
+        const container = window.parent.document.querySelector('section.stMain');
+        if (container) container.scrollTo(0, 0);
+    </script>
+""", height=0)
     st.header("🔧 Step 2: Equipment Details")
     
     # Show basic info summary
@@ -728,7 +735,7 @@ def show_step_2_form(configs):
             ds_index = durasi_solusi_list.index(editing_eq['durasi_solusi']) + 1 #type: ignore
         else:
             ds_index = 0
-        durasi_solusi_val = st.selectbox("Durasi Solusi (Optional)", options=durasi_solusi_options, index=ds_index)
+        durasi_solusi_val = st.selectbox("Durasi Solusi (Diisi jika 'Beres? = Sementara')", options=durasi_solusi_options, index=ds_index)
     
     st.divider()
     
@@ -883,7 +890,13 @@ def show_step_2_form(configs):
 
 def show_step_2_confirmation():
     """Step 2 Substep 2: Confirmation Page"""
-    
+    components.html("""
+    <script>
+        const container = window.parent.document.querySelector('section.stMain');
+        if (container) container.scrollTo(0, 0);
+    </script>
+""", height=0)
+
     st.header("📋 Review & Confirm Submission")
     st.warning("⚠️ **Please review your submission carefully before confirming**")
     
@@ -1158,7 +1171,7 @@ def main():
     check_authentication(cookies)
     
     # Header
-    col1, col2, col3 = st.columns([3, 1, 1])
+    col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
         st.title("🔧 Form Maintenance")
     with col2:
