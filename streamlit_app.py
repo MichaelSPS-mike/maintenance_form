@@ -3,7 +3,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
 from datetime import datetime, timedelta
-import time
 from typing import Any
 import streamlit_cookies_manager as scm
 import streamlit.components.v1 as components
@@ -477,8 +476,11 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
 
 def show_step_2_form(configs):
     """Step 2 Substep 1: Equipment Form"""
-    components.html("""
+    import time
+
+    components.html(f"""
     <script>
+        // {time.time()}
         const container = window.parent.document.querySelector('section.stMain');
         if (container) container.scrollTo(0, 0);
     </script>
