@@ -890,8 +890,11 @@ def show_step_2_form(configs):
 
 def show_step_2_confirmation():
     """Step 2 Substep 2: Confirmation Page"""
-    components.html("""
+    import time
+
+    components.html(f"""
     <script>
+        // {time.time()}
         const container = window.parent.document.querySelector('section.stMain');
         if (container) container.scrollTo(0, 0);
     </script>
