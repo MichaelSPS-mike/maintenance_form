@@ -168,7 +168,7 @@ def check_authentication(cookies):
         
         st.stop()
 # Step 1: Basic Information
-def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_eid):
+def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid):
     st.header("📝 Step 1: Basic Information")
     
     # Show previous input from session state if exists
@@ -178,9 +178,9 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
     # Extract saved values (or use defaults if nothing saved)
     if has_saved_data:
         saved_wo_label = st.session_state.basic_info.get('work_order_label', '')
+        saved_department = st.session_state.basic_info.get('department', '')
         saved_shift = st.session_state.basic_info.get('shift', '')
         saved_garis = st.session_state.basic_info.get('garis_produksi', '')
-        saved_pic_prod = st.session_state.basic_info.get('pic_produksi', '')
         saved_pic_m = st.session_state.basic_info.get('pic_med', '')
         saved_pic_e = st.session_state.basic_info.get('pic_eid', '')
         
@@ -230,9 +230,9 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
     else:
         # First time filling Step 1 - use default values
         saved_wo_label = ''
+        saved_department = ''
         saved_shift = ''
         saved_garis = ''
-        saved_pic_prod = ''
         saved_pic_m = ''
         saved_pic_e = ''
         saved_tanggal = datetime.now().date()
@@ -253,7 +253,7 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
         indep_df = pd.DataFrame(configs['independent'])
         shifts = sorted([str(x) for x in indep_df['Shift'].dropna().unique()])
         garis_produksi = sorted(indep_df['Garis Produksi'].dropna().unique().tolist())
-        pic_produksi = sorted(indep_df['PIC Produksi'].dropna().unique().tolist())
+        department = sorted(indep_df['Department'].dropna().unique().tolist())
         pic_med = sorted(indep_df['PIC MED'].dropna().unique().tolist())
         pic_eid = sorted(indep_df['PIC EID'].dropna().unique().tolist())
     # Work Order index
@@ -270,22 +270,22 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
     else:
         shift_index = 0
     
+    # Department index
+    department_list = [""] + department 
+    if saved_department and saved_department in department_list: 
+        department_index = department_list.index(saved_department)
+    else:
+        department_index = 0
     
     # PIC indices
-    pic_prod_list = [""] + pic_produksi
-    if saved_pic_prod and saved_pic_prod in pic_prod_list:
-        pic_prod_index = pic_prod_list.index(saved_pic_prod)
-    else:
-        pic_prod_index = 0
-    
     pic_med_list = [""] + pic_med
-    if saved_pic_m and saved_pic_m in pic_med_list:
+    if saved_pic_m and saved_pic_m in pic_med_list: #type: ignore
         pic_med_index = pic_med_list.index(saved_pic_m)
     else:
         pic_med_index = 0
     
     pic_eid_list = [""] + pic_eid
-    if saved_pic_e and saved_pic_e in pic_eid_list:
+    if saved_pic_e and saved_pic_e in pic_eid_list: #type: ignore
         pic_eid_index = pic_eid_list.index(saved_pic_e)
     else:
         pic_eid_index = 0
@@ -319,8 +319,35 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
         except KeyError:
             garis_index = 0
     st.divider()
+    # PICs - use saved values
+    st.subheader("👥 Person In Charge")
+    department = st.selectbox(
+                "Department *", 
+                options=department_list, 
+                index=department_index  # <-- Shows saved PIC
+        )
+    if department and department != "":
+        if department == "EID":
+            pic = st.selectbox(
+                "PIC EID*",
+                options = pic_eid_list,
+                index = pic_eid_index # <-- Shows saved PIC
+                )
+            pic_eid = pic
+        elif department == "MED":
+            pic = st.selectbox(
+                "PIC MED*",
+                options = pic_med_list,
+                index = pic_med_index # <-- Shows saved PIC
+            )
+            pic_med = pic
+        else:
+            st.warning("PIC options are only available for EID and MED departments. Please select one of these departments to choose PIC.")
+            pic = None
+    st.divider()
     with st.form("step1_form"):
         # Date and Shift - use saved values
+        st.subheader("📅 Date and Shift")
         col1, col2 = st.columns(2)
         with col1:
             tanggal = st.date_input(
@@ -377,33 +404,14 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
         
         st.divider()
         
-        # PICs - use saved values
-        st.subheader("👥 Person In Charge")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            pic_prod = st.selectbox(
-                "PIC Produksi *", 
-                options=pic_prod_list, 
-                index=pic_prod_index  # <-- Shows saved PIC
-            )
-        with col2:
-            pic_m = st.selectbox(
-                "PIC MED *", 
-                options=pic_med_list, 
-                index=pic_med_index  # <-- Shows saved PIC
-            )
-        with col3:
-            pic_e = st.selectbox(
-                "PIC EID *", 
-                options=pic_eid_list, 
-                index=pic_eid_index  # <-- Shows saved PIC
-            )
-        
-        st.divider()
+
         
         # Submit button
         submitted = st.form_submit_button("Next ➡️", use_container_width=True)
+
+    
+        
+
         
         # ============================================
         # STEP D: Validation and saving (same as before)
@@ -415,6 +423,8 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
             
             if not wo_label or wo_label == "":
                 errors.append("Work Order is required")
+            if not department or department == "":
+                errors.append("Department is required")
             if not shift or shift == "":
                 errors.append("Shift is required")
             if not garis or garis == "":
@@ -423,12 +433,8 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
                 errors.append("Waktu Mulai Masalah is required")
             if waktu_selesai is None:
                 errors.append("Waktu Selesai Masalah is required")
-            if not pic_prod or pic_prod == "":
-                errors.append("PIC Produksi is required")
-            if not pic_m or pic_m == "":
-                errors.append("PIC MED is required")
-            if not pic_e or pic_e == "":
-                errors.append("PIC EID is required")
+            if not pic or pic == "": #type: ignore
+                errors.append("PIC is required")
             
             # Check negative duration
             if waktu_mulai and waktu_selesai:
@@ -458,9 +464,11 @@ def show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_e
                     'waktu_mulai': waktu_mulai.strftime('%H:%M:%S'), #type: ignore
                     'tanggal_selesai': tanggal_selesai.strftime('%d/%m/%Y'),
                     'waktu_selesai': waktu_selesai.strftime('%H:%M:%S'), #type: ignore
-                    'pic_produksi': pic_prod,
-                    'pic_med': pic_m,
-                    'pic_eid': pic_e,
+                    'department': department, #type: ignore
+                    'pic': pic, #type: ignore
+                    'pic_med': pic if department == 'MED' else '', #type: ignore
+                    'pic_eid': pic if department == 'EID' else '', #type: ignore
+                    
                     
                     # For reconstructing form defaults (labels/objects)
                     'work_order_label': wo_label,  # NEW: Save dropdown label
@@ -979,9 +987,8 @@ def display_submission_summary(basic_info, equipment_list):
         with col2:
             st.write("**Mulai:**", f"{basic_info['tanggal_mulai']} {basic_info['waktu_mulai']}")
             st.write("**Selesai:**", f"{basic_info['tanggal_selesai']} {basic_info['waktu_selesai']}")
-            st.write("**PIC Produksi:**", basic_info['pic_produksi'])
-            st.write("**PIC MED:**", basic_info['pic_med'])
-            st.write("**PIC EID:**", basic_info['pic_eid'])
+            st.write("**Department:**", basic_info['department'])
+            st.write("**PIC:**", basic_info['pic'])
     
     st.divider()
     
@@ -1115,6 +1122,7 @@ def submit_to_google_sheet(basic_info, equipment_list):
             row = [
                 basic_info['work_order'],
                 basic_info['tanggal'],
+                basic_info['department'],
                 basic_info['shift'],
                 basic_info['garis_produksi'],
                 equipment['area'],
@@ -1137,16 +1145,14 @@ def submit_to_google_sheet(basic_info, equipment_list):
                 equipment['lama_loss_time'],
                 equipment['beres'],
                 equipment['durasi_solusi'],
-                basic_info['pic_produksi'],
-                basic_info['pic_med'],
-                basic_info['pic_eid']
+                basic_info['pic']
             ]
             rows_to_add.append(row)
         
         # Write to specific range
         start_row = next_row
         end_row = next_row + len(rows_to_add) - 1
-        range_notation = f"A{start_row}:AA{end_row}"
+        range_notation = f"A{start_row}:Z{end_row}"
         
         data_sheet.update(range_notation, rows_to_add) #type: ignore
         
@@ -1201,8 +1207,8 @@ def main():
         # Extract dropdown options
         indep_df = pd.DataFrame(configs['independent'])
         shifts = sorted([str(x) for x in indep_df['Shift'].dropna().unique()])
+        department = sorted(indep_df['Department'].dropna().unique().tolist())
         garis_produksi = sorted(indep_df['Garis Produksi'].dropna().unique().tolist())
-        pic_produksi = sorted(indep_df['PIC Produksi'].dropna().unique().tolist())
         pic_med = sorted(indep_df['PIC MED'].dropna().unique().tolist())
         pic_eid = sorted(indep_df['PIC EID'].dropna().unique().tolist())
         
@@ -1216,7 +1222,7 @@ def main():
 
         # Show current step
         if st.session_state.step == 1:
-            show_step_1(wo_options, shifts, garis_produksi, pic_produksi, pic_med, pic_eid) #type: ignore
+            show_step_1(wo_options, department, shifts, garis_produksi, pic_med, pic_eid) #type: ignore
         elif st.session_state.step == 2:
             show_step_2(configs)
         
