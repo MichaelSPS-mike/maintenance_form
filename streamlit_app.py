@@ -50,7 +50,7 @@ def load_all_configs():
     ranges = [
         f"{st.secrets['sheets']['dependent_config']}!A:Z",
         f"{st.secrets['sheets']['independent_config']}!A:Z",
-        f"{st.secrets['sheets']['work_orders_korektif']}!A:Z"
+        f"{st.secrets['sheets']['work_orders']}!A:Z"
     ]
     
     # Batch get values
@@ -306,10 +306,9 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         # Display WO details
     if wo_label and wo_label != "":
         wo_data = wo_options[wo_label]
-        st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Masalah:** {wo_data.get('Masalah', 'N/A')}")
+        st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Request:** {wo_data.get('Request', 'N/A')}")
 
     # Garis Produksi index -> moved here to get the default from WO value first
-    #st.write(wo_options[wo_label]['PM'])
     garis_list = [""] + garis_produksi
     if saved_garis and saved_garis in garis_list:
         garis_index = garis_list.index(saved_garis)
@@ -1216,9 +1215,26 @@ def main():
         wo_options = {}
         for wo in configs['work_orders']:
             wo_num = wo['Work Order']
-            label = f"{wo_num} (Korektif)"
-            wo_options[label] = wo
-    
+            if wo_num[2:4] == "KO":
+                label = f"{wo_num} (Korektif)"
+                wo_options[label] = wo
+            elif wo_num[2:4] == "VE":
+                label = f"{wo_num} (Preventif)"
+                wo_options[label] = wo
+            elif wo_num[2:4] == "IM":
+                label = f"{wo_num} (Improvement)"
+                wo_options[label] = wo
+            elif wo_num[2:4] == "DI":
+                label = f"{wo_num} (Prediktif Intuitif)"
+                wo_options[label] = wo
+            elif wo_num[2:4] == "DH":
+                label = f"{wo_num} (Prediktif Hybrid)"
+                wo_options[label] = wo
+            elif wo_num[2:4] == "DS":
+                label = f"{wo_num} (Prediktif Statistik)"
+                wo_options[label] = wo
+            else:
+                st.write(f"⚠️ Unknown Work Order type for {wo_num}")
 
         # Show current step
         if st.session_state.step == 1:
