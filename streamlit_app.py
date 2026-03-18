@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 import streamlit_cookies_manager as scm
 import streamlit.components.v1 as components
+from location_dict import location_code_dict
 
 
 # Page config
@@ -317,9 +318,9 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
             garis_index = garis_list.index(f'PM_{wo_options[wo_label]["PM"]}')  # Try to default to PM value from WO, else empty
         except KeyError:
             garis_index = 0
-    st.divider()
+    #st.divider()
     # PICs - use saved values
-    st.subheader("👥 Person In Charge")
+    st.subheader("PIC")
     department = st.selectbox(
                 "Department *", 
                 options=department_list, 
@@ -343,11 +344,11 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         else:
             st.warning("PIC options are only available for EID and MED departments. Please select one of these departments to choose PIC.")
             pic = None
-    st.divider()
+    #st.divider()
     with st.form("step1_form"):
         # Date and Shift - use saved values
         st.subheader("📅 Date and Shift")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             tanggal = st.date_input(
                 "Tanggal *",
@@ -361,14 +362,14 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
                 index=shift_index  # <-- Shows saved shift
             )
         
-        # Garis Produksi - use saved value
-        garis = st.selectbox(
-            "Garis Produksi *", 
-            options=garis_list, 
-            index=garis_index  # <-- Shows saved garis produksi
-        )
+        with col3: # Garis Produksi - use saved value
+            garis = st.selectbox(
+                "Garis Produksi *", 
+                options=garis_list, 
+                index=garis_index  # <-- Shows saved garis produksi
+            )
         
-        st.divider()
+        #st.divider()
         
         # Problem dates/times - use saved values
         st.subheader("⏰ Problem Timeline")
@@ -1182,6 +1183,7 @@ def main():
     col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
         st.title("🔧 Form Maintenance")
+        st.write(location_code_dict().area())
     with col2:
         if st.button("🔄 Refresh Data"):
             st.cache_data.clear()

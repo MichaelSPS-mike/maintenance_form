@@ -1,0 +1,81 @@
+class location_code_dict():
+    def area(self):
+        self.area = { # type: ignore
+            "DP" : "DIP",
+            "PM" : "PM",
+            "RW" : "Rewinder",
+            "SP" : "StockPrep",
+            "UT" : "Utility"
+        }
+        return self.area
+    def sub_area(self):
+        self.sub_area = {# type: ignore
+            "APPR" : "Approach",
+            "BOIL" : "Boiler",
+            "BROK" : "Broke",
+            "CFAN" : "CoolingFan",
+            "CCUT" : "CoreCutting",
+            "DRYE" : "Dryer",
+            "DCOL" : "DustCollecting",
+            "EXTR" : "Extractor",
+            "FELT" : "Felt",
+            "GDOC" : "GrindingDoc",
+            "HCRA" : "HoistCrane",
+            "HSTA" : "HydraulicStation",
+            "LBKP" : "LBKP",
+            "MIXG" : "Mixing",
+            "NBKP" : "NBKP",
+            "OSTA" : "OilStation",
+            "PREE" : "PopeReel",
+            "PLPR" : "Pulper",
+            "REWI" : "Rewind",
+            "SSYS" : "SteamSystem",
+            "UNWI" : "Unwind",
+            "WSYS" : "WaterSystem",
+            "WIRE" : "Wire",
+            "WRAP" : "Wrapping"
+        } 
+        return self.sub_area
+    def bagian(self):
+        self.bagian = { # type: ignore
+            "AGIT" : "Agitator",
+            "BROL" : "BananaRoll",
+            "BLIN" : "Blindreel",
+            "BOIL" : "Boiler",
+            "BRAK" : "Brake",
+            "CGRA" : "ChainGrate",
+            "CHES" : "Chest",
+            "CWAT" : "ClearWater",
+            "CPUM" : "CondensatePump",
+            "CTAN" : "CondensateTank",
+            "CNVY" : "Conveyor",
+            "CYCL" : "Cyclone",
+            "DEAI" : "Deairator",
+            "DEFL" : "Deflaker",
+            "DESU" : "Desuperheater",
+            "RUME" : "DrumReel",
+            "RUMO" : "DrumRoll",
+            "DIRE" : "DrumWireRope",
+            "XFAN" : "Fan",
+            "FPMP" : "FanPump",
+            "FWPM" : "FeedWaterPump",
+            "FROL" : "FeltRoll",
+            "FILT" : "Filter",
+            "VIBS" : "Fine/VibrationScreen",
+            "FREG" : "FlowRegulator",
+            "FORM" : "FormingArea",
+            "FWAT" : "FreshWater",
+            "XHDC" : "HDC",
+            "HEAD" : "Headbox",
+            "HEEX" : "HeatExchanger",
+            "HOOD" : "Hood",
+            "HOOK" : "Hook",
+            "KROF" : "Krofta",
+            "LINE" : "Line",
+            "MCHE" : "MachineChest",
+            "MREE" : "Mandreel",
+            "NFLX" : "Nipcoflex",
+            "PGUI" : "PalmGuide",
+            "PARM" : "PrimaryArmSystem",
+        } 
+        return self.bagian
