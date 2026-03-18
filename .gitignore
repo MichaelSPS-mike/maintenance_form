@@ -29,7 +29,11 @@ credentials.json
 .DS_Store
 Thumbs.db
 
+
 # Data files (optional - uncomment if you don't want to upload data)
 # *.csv
-# *.xlsx
+ *.xlsx
+ *.xls
 # *.db
+# Training Files
+Materi Training PM/
