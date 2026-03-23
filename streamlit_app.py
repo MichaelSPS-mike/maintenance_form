@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 import streamlit_cookies_manager as scm
 import streamlit.components.v1 as components
-from location_dict import location_code_dict
+from dicts import location_code_dict, equipment_code_dict
 
 
 # Page config
@@ -1184,6 +1184,7 @@ def main():
     with col1:
         st.title("🔧 Form Maintenance")
         st.write(location_code_dict().area())
+        st.write(equipment_code_dict().divisi())
     with col2:
         if st.button("🔄 Refresh Data"):
             st.cache_data.clear()
