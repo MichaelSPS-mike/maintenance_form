@@ -1183,8 +1183,6 @@ def main():
     col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
         st.title("🔧 Form Maintenance")
-        st.write(location_code_dict().area())
-        st.write(equipment_code_dict().divisi())
     with col2:
         if st.button("🔄 Refresh Data"):
             st.cache_data.clear()
