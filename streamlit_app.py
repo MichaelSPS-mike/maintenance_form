@@ -131,7 +131,9 @@ def init_session_state():
     if 'editing_index' not in st.session_state:
         st.session_state.editing_index = None
     if 'step_2_substep' not in st.session_state:  
-        st.session_state.step_2_substep = 1  
+        st.session_state.step_2_substep = 1
+    if 'step_2_draft' not in st.session_state:
+        st.session_state.step_2_draft = {}
 
 # Authentication
 def check_authentication(cookies):
@@ -482,7 +484,9 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
 
 # Step 2: Equipment Details with Edit Functionality
 
-def show_step_2_form(configs):
+def show_step_2_form(configs, cookies):
+    import json
+    import re
     """Step 2 Substep 1: Equipment Form"""
 
     components.html(f"""
@@ -520,9 +524,53 @@ def show_step_2_form(configs):
     if is_editing:
         editing_eq = st.session_state.equipment_list[st.session_state.editing_index]
         st.info(f"✏️ Editing Equipment #{st.session_state.editing_index + 1}")
+
+    # Resolving default values for every field
+    # When NOT editing: pull defaults from step_2_draft
+    #   - draft.get('field', '') returns '' if field not yet saved
+    #   - This is exactly what Step 1 does with basic_info
+    # When editing: pull defaults from the equipment being edited
+    #   - This preserves the existing editing behavior unchanged
+    if not is_editing:
+            draft = st.session_state.step_2_draft
+
+            equipment_id_default      = draft.get('equipment_id', '')
+            location_id_default       = draft.get('location_id', '')
+            area_default              = draft.get('area', '')
+            sub_area_default          = draft.get('sub_area', '')
+            bagian_default            = draft.get('bagian', '')
+            sub_bagian_default        = draft.get('sub_bagian', '')
+            jenis_tindakan_default    = draft.get('jenis_tindakan', '')
+            deskripsi_tindakan_default = draft.get('deskripsi_tindakan', '')
+            alasan_kegagalan_default  = draft.get('alasan_kegagalan', '')
+            deskripsi_alasan_default  = draft.get('deskripsi_alasan', '')
+            jenis_maintenance_default = draft.get('jenis_maintenance', '')
+            mesin_mati_default        = draft.get('mesin_mati', '')
+            loss_kapasitas_default    = draft.get('loss_kapasitas', None)
+            lama_loss_time_default    = draft.get('lama_loss_time', None)
+            beres_default             = draft.get('beres', '')
+            durasi_solusi_default     = draft.get('durasi_solusi', '')
+
     else:
-        editing_eq = None
-    
+            editing_eq = st.session_state.equipment_list[st.session_state.editing_index]
+            # Editing mode: read from the saved equipment entry
+            equipment_id_default      = editing_eq['equipment_id']
+            location_id_default       = editing_eq['location_id']
+            area_default              = editing_eq['area']
+            sub_area_default          = editing_eq['sub_area']
+            bagian_default            = editing_eq.get('bagian', '')
+            sub_bagian_default        = editing_eq.get('sub_bagian', '')
+            jenis_tindakan_default    = editing_eq['jenis_tindakan']
+            deskripsi_tindakan_default = editing_eq['deskripsi_tindakan']
+            alasan_kegagalan_default  = editing_eq['alasan_kegagalan']
+            deskripsi_alasan_default  = editing_eq['deskripsi_alasan']
+            jenis_maintenance_default = editing_eq['jenis_maintenance']
+            mesin_mati_default        = editing_eq['mesin_mati']
+            loss_kapasitas_default    = editing_eq['loss_kapasitas'] if editing_eq['loss_kapasitas'] != "" else None
+            lama_loss_time_default    = editing_eq['lama_loss_time'] if editing_eq['lama_loss_time'] != "" else None
+            beres_default             = editing_eq['beres']
+            durasi_solusi_default     = editing_eq.get('durasi_solusi', '')
+
     # ============================================
     # Equipment summary with Edit/Delete
     # ============================================
@@ -559,13 +607,26 @@ def show_step_2_form(configs):
     # ============================================
     
     st.subheader("🔧 Equipment Information")
-    
+    equipment_id = st.text_input(
+            "Equipment ID (Optional)", 
+            value=equipment_id_default,
+            max_chars=34,
+            help="Format: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ (34 characters)"
+        )
+    location_id = st.text_input(
+        "Location_ID (Optional)",
+        value = location_id_default,
+        max_chars = 29,
+        help = "Format: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH (29 characters)"
+    )
     # Area
     areas = sorted(dep_df['Area'].dropna().unique().tolist())
     area_options = [""] + areas
-    
+    #st.write(areas.index(area_default))
     if is_editing and editing_eq['area'] in areas: #type: ignore
         area_index = areas.index(editing_eq['area']) + 1 #type: ignore
+    elif area_default:
+        area_index = areas.index(area_default) + 1
     else:
         area_index = 0
     
@@ -578,6 +639,8 @@ def show_step_2_form(configs):
         
         if is_editing and editing_eq['sub_area'] in sub_areas: #type: ignore
             sub_area_index = sub_areas.index(editing_eq['sub_area']) + 1 #type: ignore
+        elif sub_area_default and area_default == area:
+            sub_area_index = sub_areas.index(sub_area_default) + 1
         else:
             sub_area_index = 0
         
@@ -609,6 +672,8 @@ def show_step_2_form(configs):
                 bagian_index = bagian_options.index(edit_bagian)
             else:
                 bagian_index = 0
+        elif bagian_default and area == area_default and sub_area == sub_area_default: 
+            bagian_index = bagian_options.index(bagian_default)
         else:
             bagian_index = 0
         
@@ -646,6 +711,8 @@ def show_step_2_form(configs):
                 sub_bagian_index = sub_bagian_options.index(edit_sub_bagian)
             else:
                 sub_bagian_index = 0
+        elif sub_bagian_default and area == area_default and sub_area == sub_area_default and bagian == bagian_default:
+            sub_bagian_index = sub_bagian_options.index(sub_bagian_default)
         else:
             sub_bagian_index = 0
         
@@ -664,10 +731,13 @@ def show_step_2_form(configs):
         jt_index = jenis_tindakan_list.index(editing_eq['jenis_tindakan']) + 1 #type: ignore
     else:
         jt_index = 0
-    jenis_tindakan_val = st.selectbox("Jenis Tindakan *", options=jenis_tindakan_options, index=jt_index)
+    jenis_tindakan_val = st.selectbox("Jenis Tindakan *", 
+                                      options=jenis_tindakan_options, 
+                                      index=jt_index)
     
     deskripsi_tindakan_default = editing_eq['deskripsi_tindakan'] if is_editing else "" #type: ignore
-    deskripsi_tindakan = st.text_area("Deskripsi Tindakan *", value=deskripsi_tindakan_default, height=100)
+    deskripsi_tindakan = st.text_area("Deskripsi Tindakan *", 
+                                      value=deskripsi_tindakan_default)
     
     # Kegagalan
     st.subheader("⚠️ Failure Reason")
@@ -677,10 +747,14 @@ def show_step_2_form(configs):
         ak_index = alasan_kegagalan_list.index(editing_eq['alasan_kegagalan']) + 1 #type: ignore
     else:
         ak_index = 0
-    alasan_kegagalan_val = st.selectbox("Alasan Kegagalan *", options=alasan_kegagalan_options, index=ak_index)
+    alasan_kegagalan_val = st.selectbox("Alasan Kegagalan *", 
+                                        options=alasan_kegagalan_options, 
+                                        index=ak_index)
     
     deskripsi_alasan_default = editing_eq['deskripsi_alasan'] if is_editing else ""   #type: ignore
-    deskripsi_alasan = st.text_area("Deskripsi Alasan *", value=deskripsi_alasan_default, height=100)
+    deskripsi_alasan = st.text_area("Deskripsi Alasan *",
+                                     value=deskripsi_alasan_default,
+                                       height=100)
     
     st.divider()
     
@@ -692,22 +766,20 @@ def show_step_2_form(configs):
             jm_index = jenis_maintenance_list.index(editing_eq['jenis_maintenance']) + 1 #type: ignore
         else:
             jm_index = 0
-        jenis_maintenance_val = st.selectbox("Jenis Maintenance *", options=jenis_maintenance_options, index=jm_index)
+        jenis_maintenance_val = st.selectbox("Jenis Maintenance *",
+                                            options=jenis_maintenance_options, 
+                                            index=jm_index)
         
-        tag_number_default = editing_eq['tag_number'] if is_editing else "" #type: ignore
-        tag_number = st.text_input(
-            "Tag Number (Optional)", 
-            value=tag_number_default,
-            max_chars=18,
-            help="Format: XX.X.XX.XX.XXXX.XX (18 characters)"
-        )
+
         
         mesin_mati_options = [""] + mesin_mati_list
         if is_editing and editing_eq['mesin_mati'] in mesin_mati_list: #type: ignore
             mm_index = mesin_mati_list.index(editing_eq['mesin_mati']) + 1 #type: ignore
         else:
             mm_index = 0
-        mesin_mati_val = st.selectbox("Mesin Mati? *", options=mesin_mati_options, index=mm_index)
+        mesin_mati_val = st.selectbox("Mesin Mati? *", 
+                                      options=mesin_mati_options, 
+                                      index=mm_index)
     
     with col2:
         loss_kapasitas_default = editing_eq['loss_kapasitas'] if is_editing and editing_eq['loss_kapasitas'] != "" else None #type: ignore
@@ -736,17 +808,55 @@ def show_step_2_form(configs):
             b_index = beres_list.index(editing_eq['beres']) + 1 #type: ignore
         else:
             b_index = 0
-        beres_val = st.selectbox("Beres? *", options=beres_options, index=b_index)
+        beres_val = st.selectbox("Beres? *", 
+                                 options=beres_options, 
+                                 index=b_index)
     with col2:
         durasi_solusi_options = [""] + durasi_solusi_list
         if is_editing and editing_eq['durasi_solusi'] in durasi_solusi_list: #type: ignore
             ds_index = durasi_solusi_list.index(editing_eq['durasi_solusi']) + 1 #type: ignore
         else:
             ds_index = 0
-        durasi_solusi_val = st.selectbox("Durasi Solusi (Diisi jika 'Beres? = Sementara')", options=durasi_solusi_options, index=ds_index)
+        durasi_solusi_val = st.selectbox("Durasi Solusi (Diisi jika 'Beres? = Sementara')", 
+                                         options=durasi_solusi_options, 
+                                         index=ds_index)
     
     st.divider()
     
+    # Saving draft after all widgets are rendered
+    if not is_editing:
+
+        # Collect every widget's current value into a single dict
+        new_draft = {
+            'equipment_id':           equipment_id           if equipment_id           else '',
+            'location_id':            location_id            if location_id            else '',
+            'area':                   area                   if area                   else '',
+            'sub_area':               sub_area               if sub_area               else '',
+            'bagian':                 bagian                 if bagian                 else '',
+            'sub_bagian':             sub_bagian             if sub_bagian             else '',
+            'jenis_tindakan':         jenis_tindakan_val     if jenis_tindakan_val     else '',
+            'deskripsi_tindakan':     deskripsi_tindakan     if deskripsi_tindakan     else '',
+            'alasan_kegagalan':       alasan_kegagalan_val   if alasan_kegagalan_val   else '',
+            'deskripsi_alasan':       deskripsi_alasan       if deskripsi_alasan       else '',
+            'jenis_maintenance':      jenis_maintenance_val  if jenis_maintenance_val  else '',
+            'mesin_mati':             mesin_mati_val         if mesin_mati_val         else '',
+            'loss_kapasitas':         loss_kapasitas,   # None or float — preserved as-is
+            'lama_loss_time':         lama_loss_time,   # None or float — preserved as-is
+            'beres':                  beres_val              if beres_val              else '',
+            'durasi_solusi':          durasi_solusi_val      if durasi_solusi_val      else '',
+        }
+
+        # Only save when the draft actually changed
+        # This prevents a cookie write + potential extra rerun on every single render
+        if new_draft != st.session_state.step_2_draft:
+
+            # 1. Update session state (persists across step navigation within a session)
+            st.session_state.step_2_draft = new_draft
+
+            # 2. Serialize to JSON and write to cookie (persists across full page refresh)
+            # json.dumps converts the Python dict to a JSON string for cookie storage
+            cookies['step_2_draft'] = json.dumps(new_draft)
+            cookies.save()
     # ============================================
     # Buttons - SEPARATED LOGIC
     # ============================================
@@ -756,6 +866,7 @@ def show_step_2_form(configs):
         col1, col2 = st.columns(2)
         with col1:
             if st.button("❌ Cancel Edit", use_container_width=True):
+                st.session_state.s2_editing_loaded = None
                 st.session_state.editing_index = None
                 st.rerun()
         with col2:
@@ -782,12 +893,18 @@ def show_step_2_form(configs):
                 if not beres_val or beres_val == "":
                     errors.append("❌ Beres? is required")
                 
-                if tag_number and tag_number.strip() != "":
+                if equipment_id and equipment_id.strip() != "":
                     import re
-                    pattern = r'^\d{2}\.[A-Z]\.\d{2}\.\d{2}\.[A-Z]{4}\.\d{2}$'
-                    if not re.match(pattern, tag_number):
-                        errors.append("❌ Tag Number format invalid. Must be: XX.X.XX.XX.XXXX.XX")
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
+                    if not re.match(pattern, equipment_id):
+                        errors.append("❌ Equipment ID format invalid. Must be: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
                 
+                if location_id and location_id.strip() != "":
+                    import re
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{3}$'
+                    if not re.match(pattern, location_id):
+                        errors.append("❌ Location ID format invalid. Must be: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH")
+
                 if errors:
                     for error in errors:
                         st.error(error)
@@ -802,7 +919,8 @@ def show_step_2_form(configs):
                         'alasan_kegagalan': alasan_kegagalan_val,
                         'deskripsi_alasan': deskripsi_alasan,
                         'jenis_maintenance': jenis_maintenance_val,
-                        'tag_number': tag_number if tag_number else "",
+                        'equipment_id': equipment_id if equipment_id else "",
+                        'location_id': location_id if location_id else "",
                         'mesin_mati': mesin_mati_val,
                         'loss_kapasitas': loss_kapasitas if loss_kapasitas is not None else "",
                         'lama_loss_time': lama_loss_time if lama_loss_time is not None else "",
@@ -842,12 +960,18 @@ def show_step_2_form(configs):
                 if not beres_val or beres_val == "":
                     errors.append("❌ Beres? is required")
                 
-                if tag_number and tag_number.strip() != "":
+                if equipment_id and equipment_id.strip() != "":
+                    import re 
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
+                    if not re.match(pattern, equipment_id):
+                        errors.append("❌ Equipment ID format invalid. Must be: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+
+                if location_id and location_id.strip() != "":
                     import re
-                    pattern = r'^\d{2}\.[A-Z]\.\d{2}\.\d{2}\.[A-Z]{4}\.\d{2}$'
-                    if not re.match(pattern, tag_number):
-                        errors.append("❌ Tag Number format invalid. Must be: XX.X.XX.XX.XXXX.XX")
-                
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{3}$'
+                    if not re.match(pattern, location_id):
+                        errors.append("❌ Location ID format invalid. Must be: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH")
+
                 if errors:
                     for error in errors:
                         st.error(error)
@@ -862,7 +986,8 @@ def show_step_2_form(configs):
                         'alasan_kegagalan': alasan_kegagalan_val,
                         'deskripsi_alasan': deskripsi_alasan,
                         'jenis_maintenance': jenis_maintenance_val,
-                        'tag_number': tag_number if tag_number else "",
+                        'equipment_id': equipment_id if equipment_id else "",
+                        'location_id': location_id if location_id else "",
                         'mesin_mati': mesin_mati_val,
                         'loss_kapasitas': loss_kapasitas if loss_kapasitas is not None else "",
                         'lama_loss_time': lama_loss_time if lama_loss_time is not None else "",
@@ -896,7 +1021,8 @@ def show_step_2_form(configs):
         if is_editing:
             st.caption("⚠️ Cancel edit to go back")
 
-def show_step_2_confirmation():
+def show_step_2_confirmation(cookies):
+    import json
     """Step 2 Substep 2: Confirmation Page"""
     import time
 
@@ -946,6 +1072,15 @@ def show_step_2_confirmation():
                 st.session_state.step_2_substep = 1  # Reset substep
                 st.session_state.step = 1
                 
+
+                st.session_state.step_2_draft = {}
+
+                # Clear the cookie by writing an empty JSON object
+                # We don't delete the cookie key entirely — we just write {} to it
+                # so that the restore logic in main() finds it empty and skips restore
+                cookies['step_2_draft'] = json.dumps({})
+                cookies.save()
+
                 st.cache_data.clear()
                 
                 st.info("🔄 Returning to Step 1...")
@@ -955,15 +1090,15 @@ def show_step_2_confirmation():
                 st.error(f"❌ Submission failed: {message}")
                 st.session_state.step_2_substep = 1  # Return to form on error
 
-def show_step_2(configs):
+def show_step_2(configs, cookies):
     """Router for Step 2 substeps"""
     
     if st.session_state.step_2_substep == 1:
         # Substep 1: Equipment form
-        show_step_2_form(configs)
+        show_step_2_form(configs, cookies)
     elif st.session_state.step_2_substep == 2:
         # Substep 2: Confirmation
-        show_step_2_confirmation()
+        show_step_2_confirmation(cookies)
 
 def display_submission_summary(basic_info, equipment_list):
     """Display scrollable summary of data to be submitted"""
@@ -1051,11 +1186,12 @@ def display_submission_summary(basic_info, equipment_list):
             st.divider()
             
             # Technical details
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns([2, 1])
             with col1:
                 st.write("**🔧 Technical:**")
                 st.write("• Jenis Maintenance:", eq['jenis_maintenance'])
-                st.write("• Tag Number:", eq['tag_number'] or "(empty)")
+                st.write("• Equipment ID:", eq['equipment_id'] or "(empty)")
+                st.write("• Location ID:", eq['location_id'] or "(empty)")
                 st.write("• Mesin Mati?:", eq['mesin_mati'])
             
             with col2:
@@ -1138,7 +1274,8 @@ def submit_to_google_sheet(basic_info, equipment_list):
                 equipment['alasan_kegagalan'],
                 equipment['deskripsi_alasan'],
                 equipment['jenis_maintenance'],
-                equipment['tag_number'],
+                equipment['location_id'],
+                equipment['equipment_id'],
                 equipment['mesin_mati'],
                 durasi_aksi,
                 equipment['loss_kapasitas'],
@@ -1163,6 +1300,7 @@ def submit_to_google_sheet(basic_info, equipment_list):
         return False, f"Error: {str(e)}\n{traceback.format_exc()}"
 #Main App
 def main():
+    import json # For serializing or deserializing the draft
     init_session_state()
     cookies = scm.CookieManager()
 
@@ -1176,7 +1314,15 @@ def main():
             # Auto-login from cookie
             st.session_state.authenticated = True
             st.session_state.username = saved_user
-    
+
+    # To restore step 2 draft from cookie
+    if not st.session_state.step_2_draft:
+        raw_draft = cookies.get('step_2_draft')
+        if raw_draft:
+            try:
+                st.session_state.step_2_draft = json.loads(raw_draft)
+            except Exception:
+                st.session_state.step_2_draft = {}
     check_authentication(cookies)
     
     # Header
@@ -1241,7 +1387,7 @@ def main():
         if st.session_state.step == 1:
             show_step_1(wo_options, department, shifts, garis_produksi, pic_med, pic_eid) #type: ignore
         elif st.session_state.step == 2:
-            show_step_2(configs)
+            show_step_2(configs, cookies)
         
     except Exception as e:
         st.error(f"Error loading configs: {e}")
