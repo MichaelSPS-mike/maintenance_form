@@ -619,18 +619,21 @@ def show_step_2_form(configs, cookies):
         max_chars = 29,
         help = "Format: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH (29 characters)"
     )
+    #st.write(str(location_id).split('.')[5])
     # Area
     areas = sorted(dep_df['Area'].dropna().unique().tolist())
     area_options = [""] + areas
     #st.write(areas.index(area_default))
     if is_editing and editing_eq['area'] in areas: #type: ignore
         area_index = areas.index(editing_eq['area']) + 1 #type: ignore
-    elif area_default:
-        area_index = areas.index(area_default) + 1
+    elif location_id:
+        parsed_area = str(location_id).split('.')[4] #The area code from location ID
+        named_area = location_code_dict().area()[parsed_area] #type: ignore
+        area_index = areas.index(named_area) + 1
     else:
         area_index = 0
-    
-    area = st.selectbox("Area *", options=area_options, index=area_index, key="area_select")
+    area_selectbox_key = f"area_select_{location_id}" if location_id else "area_select"
+    area = st.selectbox("Area *", options=area_options, index=area_index, key=area_selectbox_key)
     
     # Sub Area
     if area and area != "":
@@ -639,21 +642,23 @@ def show_step_2_form(configs, cookies):
         
         if is_editing and editing_eq['sub_area'] in sub_areas: #type: ignore
             sub_area_index = sub_areas.index(editing_eq['sub_area']) + 1 #type: ignore
-        elif sub_area_default and area_default == area:
-            sub_area_index = sub_areas.index(sub_area_default) + 1
+        elif location_id:
+            parsed_sub_area = str(location_id).split('.')[5] #The sub area code from location ID
+            named_sub_area = location_code_dict().sub_area()[parsed_sub_area] #type: ignore
+            sub_area_index = sub_areas.index(named_sub_area) + 1
         else:
             sub_area_index = 0
-        
-        sub_area = st.selectbox("Sub Area *", options=sub_area_options, index=sub_area_index, key="sub_area_select")
+        sub_area_selectbox_key = f"sub_area_select_{location_id}" if location_id else "sub_area_select"
+        sub_area = st.selectbox("Sub Area *", options=sub_area_options, index=sub_area_index, key=sub_area_selectbox_key)
     else:
         sub_area = st.selectbox("Sub Area *", options=[], disabled=True)
         sub_area = None
-    
+    # ======================================
     # Bagian
+    # ======================================
     if area and area != "" and sub_area and sub_area != "":
         filtered = dep_df[(dep_df['Area'] == area) & (dep_df['Sub Area'] == sub_area)]
         bagian_values = filtered['Bagian'].tolist()
-        
         bagian_options = [""]
         for val in bagian_values:
             if pd.isna(val) or val == "":
@@ -672,8 +677,13 @@ def show_step_2_form(configs, cookies):
                 bagian_index = bagian_options.index(edit_bagian)
             else:
                 bagian_index = 0
-        elif bagian_default and area == area_default and sub_area == sub_area_default: 
-            bagian_index = bagian_options.index(bagian_default)
+        elif location_id:
+            parsed_bagian = str(location_id).split('.')[6] #The bagian code from location ID
+            named_bagian = location_code_dict().bagian()[parsed_bagian] #type: ignore
+            #st.write(named_bagian)
+            bagian_index = bagian_options.index(named_bagian)
+        #elif bagian_default and area == area_default and sub_area == sub_area_default: 
+            #bagian_index = bagian_options.index(bagian_default)
         else:
             bagian_index = 0
         
@@ -965,7 +975,6 @@ def show_step_2_form(configs, cookies):
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
                     if not re.match(pattern, equipment_id):
                         errors.append("❌ Equipment ID format invalid. Must be: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
-
                 if location_id and location_id.strip() != "":
                     import re
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{3}$'
