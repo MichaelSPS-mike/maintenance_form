@@ -251,7 +251,6 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
     # If saved value exists in options, find its position
     # If not, use index 0 (empty option)
         configs = load_all_configs()
-        
         # Extract dropdown options
         indep_df = pd.DataFrame(configs['independent'])
         shifts = sorted([str(x) for x in indep_df['Shift'].dropna().unique()])
@@ -260,7 +259,25 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         pic_med = sorted(indep_df['PIC MED'].dropna().unique().tolist())
         pic_eid = sorted(indep_df['PIC EID'].dropna().unique().tolist())
     # Work Order index
-    wo_list = [""] + list(wo_options.keys())
+    # Filtering The Work Order
+    wo_df = pd.DataFrame.from_dict(wo_options, orient="index")
+    wo_df["Timestamp"] = pd.to_datetime(wo_df["Timestamp"], format="%d/%m/%Y %H:%M:%S")
+    start_date = st.date_input(
+        "WO setelah:",
+        value = pd.Timestamp(datetime.now() - timedelta(7))
+        )
+    end_date = st.date_input(
+        "WO sebelum:",
+        value = pd.Timestamp(datetime.now())
+    )
+    start_date_cutoff, end_date_cutoff = pd.Timestamp(start_date), pd.Timestamp(end_date)
+    filtered_wo_df = wo_df[(wo_df['Timestamp'] >= start_date_cutoff) & 
+                           (wo_df['Timestamp'] <= end_date_cutoff)]
+    filtered_wo_dict = filtered_wo_df.to_dict(orient = 'index')
+
+    wo_list = [""] + list(filtered_wo_dict.keys())
+    
+    #st.write(wo_options)
     if saved_wo_label and saved_wo_label in wo_list: #type: ignore
         wo_index = wo_list.index(saved_wo_label)
     else:
@@ -298,6 +315,7 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
     # ============================================
     
         # Work Order - use calculated index
+    
     wo_label = st.selectbox(
         "Work Order *",
         options=wo_list,
@@ -305,11 +323,11 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         help="Select work order from last 28 days"
     )
     
-    
         # Display WO details
     if wo_label and wo_label != "":
         wo_data = wo_options[wo_label]
         st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Request:** {wo_data.get('Request', 'N/A')}")
+        #st.info(wo_data.get('Prioritas', 'N/A')) <- this makes it show the WO priority
 
     # Garis Produksi index -> moved here to get the default from WO value first
     garis_list = [""] + garis_produksi
