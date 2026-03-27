@@ -96,7 +96,7 @@ def load_all_configs():
     # Filter work orders (last 28 days)
     # ============================================
     
-    cutoff = datetime.now() - timedelta(days=28)
+    cutoff = datetime.now() - timedelta(days=365)
     recent_wo = []
     
     for wo in wo_data:
@@ -258,30 +258,7 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         department = sorted(indep_df['Department'].dropna().unique().tolist())
         pic_med = sorted(indep_df['PIC MED'].dropna().unique().tolist())
         pic_eid = sorted(indep_df['PIC EID'].dropna().unique().tolist())
-    # Work Order index
-    # Filtering The Work Order
-    wo_df = pd.DataFrame.from_dict(wo_options, orient="index")
-    wo_df["Timestamp"] = pd.to_datetime(wo_df["Timestamp"], format="%d/%m/%Y %H:%M:%S")
-    start_date = st.date_input(
-        "WO setelah:",
-        value = pd.Timestamp(datetime.now() - timedelta(7))
-        )
-    end_date = st.date_input(
-        "WO sebelum:",
-        value = pd.Timestamp(datetime.now())
-    )
-    start_date_cutoff, end_date_cutoff = pd.Timestamp(start_date), pd.Timestamp(end_date)
-    filtered_wo_df = wo_df[(wo_df['Timestamp'] >= start_date_cutoff) & 
-                           (wo_df['Timestamp'] <= end_date_cutoff)]
-    filtered_wo_dict = filtered_wo_df.to_dict(orient = 'index')
-
-    wo_list = [""] + list(filtered_wo_dict.keys())
     
-    #st.write(wo_options)
-    if saved_wo_label and saved_wo_label in wo_list: #type: ignore
-        wo_index = wo_list.index(saved_wo_label)
-    else:
-        wo_index = 0
     
     # Shift index
     shift_list = [""] + shifts
@@ -310,35 +287,6 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
     else:
         pic_eid_index = 0
     
-    # ============================================
-    # STEP C: Render form with saved values as defaults
-    # ============================================
-    
-        # Work Order - use calculated index
-    
-    wo_label = st.selectbox(
-        "Work Order *",
-        options=wo_list,
-        index=wo_index,  # <-- This makes it show saved value
-        help="Select work order from last 28 days"
-    )
-    
-        # Display WO details
-    if wo_label and wo_label != "":
-        wo_data = wo_options[wo_label]
-        st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Request:** {wo_data.get('Request', 'N/A')}")
-        #st.info(wo_data.get('Prioritas', 'N/A')) <- this makes it show the WO priority
-
-    # Garis Produksi index -> moved here to get the default from WO value first
-    garis_list = [""] + garis_produksi
-    if saved_garis and saved_garis in garis_list:
-        garis_index = garis_list.index(saved_garis)
-    else:
-        try:
-            garis_index = garis_list.index(f'PM_{wo_options[wo_label]["PM"]}')  # Try to default to PM value from WO, else empty
-        except KeyError:
-            garis_index = 0
-    #st.divider()
     # PICs - use saved values
     st.subheader("PIC")
     department = st.selectbox(
@@ -364,6 +312,62 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         else:
             st.warning("PIC options are only available for EID and MED departments. Please select one of these departments to choose PIC.")
             pic = None
+    # ============================================
+    # Step C: Render form with saved values as defaults
+    # ============================================
+    # Work Order index
+    # Filtering The Work Order 
+    # Date filter
+    wo_df = pd.DataFrame.from_dict(wo_options, orient="index")
+    wo_df["Timestamp"] = pd.to_datetime(wo_df["Timestamp"], format="%d/%m/%Y %H:%M:%S")
+    start_date = st.date_input(
+        "WO setelah:",
+        value = pd.Timestamp(datetime.now() - timedelta(7))
+        )
+    end_date = st.date_input(
+        "WO sebelum:",
+        value = pd.Timestamp(datetime.now())
+    )
+    start_date_cutoff, end_date_cutoff = pd.Timestamp(start_date), pd.Timestamp(end_date)
+    filtered_wo_df = wo_df[(wo_df['Timestamp'] >= start_date_cutoff) & 
+                           (wo_df['Timestamp'] <= end_date_cutoff)]
+    # Priority filter
+    #st.selectbox =
+    filtered_wo_dict = filtered_wo_df.to_dict(orient = 'index')
+
+    wo_list = [""] + list(filtered_wo_dict.keys())
+    
+    #st.write(wo_options)
+    if saved_wo_label and saved_wo_label in wo_list: #type: ignore
+        wo_index = wo_list.index(saved_wo_label)
+    else:
+        wo_index = 0
+        # Work Order - use calculated index
+    
+    wo_label = st.selectbox(
+        "Work Order *",
+        options=wo_list,
+        index=wo_index,  # <-- This makes it show saved value
+        help="Select work order from last 28 days"
+    )
+    
+        # Display WO details
+    if wo_label and wo_label != "":
+        wo_data = wo_options[wo_label]
+        st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Request:** {wo_data.get('Request', 'N/A')}")
+        #st.info(wo_data.get('Prioritas', 'N/A')) <- this makes it show the WO priority
+
+    # Garis Produksi index -> moved here to get the default from WO value first
+    garis_list = [""] + garis_produksi
+    if saved_garis and saved_garis in garis_list:
+        garis_index = garis_list.index(saved_garis)
+    else:
+        try:
+            garis_index = garis_list.index(f'PM_{wo_options[wo_label]["PM"]}')  # Try to default to PM value from WO, else empty
+        except KeyError:
+            garis_index = 0
+    #st.divider()
+    
     #st.divider()
     with st.form("step1_form"):
         # Date and Shift - use saved values
@@ -661,9 +665,13 @@ def show_step_2_form(configs, cookies):
         if is_editing and editing_eq['sub_area'] in sub_areas: #type: ignore
             sub_area_index = sub_areas.index(editing_eq['sub_area']) + 1 #type: ignore
         elif location_id:
-            parsed_sub_area = str(location_id).split('.')[5] #The sub area code from location ID
-            named_sub_area = location_code_dict().sub_area()[parsed_sub_area] #type: ignore
-            sub_area_index = sub_areas.index(named_sub_area) + 1
+            try:
+                parsed_sub_area = str(location_id).split('.')[5] #The sub area code from location ID
+                named_sub_area = location_code_dict().sub_area()[parsed_sub_area] #type: ignore
+                sub_area_index = sub_areas.index(named_sub_area) + 1
+            except Exception as E:
+                st.info('Location ID tidak cocok dengan pilihan area.')
+                sub_area_index = 0
         else:
             sub_area_index = 0
         sub_area_selectbox_key = f"sub_area_select_{location_id}" if location_id else "sub_area_select"
@@ -696,10 +704,13 @@ def show_step_2_form(configs, cookies):
             else:
                 bagian_index = 0
         elif location_id:
-            parsed_bagian = str(location_id).split('.')[6] #The bagian code from location ID
-            named_bagian = location_code_dict().bagian()[parsed_bagian] #type: ignore
-            #st.write(named_bagian)
-            bagian_index = bagian_options.index(named_bagian)
+            try:
+                parsed_bagian = str(location_id).split('.')[6] #The bagian code from location ID
+                named_bagian = location_code_dict().bagian()[parsed_bagian] #type: ignore
+                bagian_index = bagian_options.index(named_bagian)
+            except:
+                st.info('Location ID tidak cocok dengan pilihan sub area')
+                bagian_index = 0
         #elif bagian_default and area == area_default and sub_area == sub_area_default: 
             #bagian_index = bagian_options.index(bagian_default)
         else:

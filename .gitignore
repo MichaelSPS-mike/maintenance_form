@@ -37,3 +37,6 @@ Thumbs.db
 # *.db
 # Training Files
 Materi Training PM/
+# Docs file
+*.doc
+*.docx
