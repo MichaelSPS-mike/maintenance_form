@@ -289,29 +289,32 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
     
     # PICs - use saved values
     st.subheader("PIC")
-    department = st.selectbox(
-                "Department *", 
-                options=department_list, 
-                index=department_index  # <-- Shows saved PIC
-        )
-    if department and department != "":
-        if department == "EID":
-            pic = st.selectbox(
-                "PIC EID*",
-                options = pic_eid_list,
-                index = pic_eid_index # <-- Shows saved PIC
-                )
-            pic_eid = pic
-        elif department == "MED":
-            pic = st.selectbox(
-                "PIC MED*",
-                options = pic_med_list,
-                index = pic_med_index # <-- Shows saved PIC
+    col1, col2 = st.columns(2)
+    with col1:
+        department = st.selectbox(
+                    "Department *", 
+                    options=department_list, 
+                    index=department_index  # <-- Shows saved PIC
             )
-            pic_med = pic
-        else:
-            st.warning("PIC options are only available for EID and MED departments. Please select one of these departments to choose PIC.")
-            pic = None
+    if department and department != "":
+        with col2:
+            if department == "EID":
+                pic = st.selectbox(
+                    "PIC EID*",
+                    options = pic_eid_list,
+                    index = pic_eid_index # <-- Shows saved PIC
+                    )
+                pic_eid = pic
+            elif department == "MED":
+                pic = st.selectbox(
+                    "PIC MED*",
+                    options = pic_med_list,
+                    index = pic_med_index # <-- Shows saved PIC
+                )
+                pic_med = pic
+            else:
+                st.warning("PIC options are only available for EID and MED departments. Please select one of these departments to choose PIC.")
+                pic = None
     # ============================================
     # Step C: Render form with saved values as defaults
     # ============================================
@@ -320,21 +323,32 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
     # Date filter
     wo_df = pd.DataFrame.from_dict(wo_options, orient="index")
     wo_df["Timestamp"] = pd.to_datetime(wo_df["Timestamp"], format="%d/%m/%Y %H:%M:%S")
-    start_date = st.date_input(
-        "WO setelah:",
-        value = pd.Timestamp(datetime.now() - timedelta(7))
+    col1,col2,col3= st.columns (3)
+    with col1:
+        start_date = st.date_input(
+            "WO setelah:",
+            value = pd.Timestamp(datetime.now() - timedelta(7))
+            )
+    with col2:
+        end_date = st.date_input(
+            "WO sebelum:",
+            value = pd.Timestamp(datetime.now())
         )
-    end_date = st.date_input(
-        "WO sebelum:",
-        value = pd.Timestamp(datetime.now())
-    )
     start_date_cutoff, end_date_cutoff = pd.Timestamp(start_date), pd.Timestamp(end_date)
     filtered_wo_df = wo_df[(wo_df['Timestamp'] >= start_date_cutoff) & 
                            (wo_df['Timestamp'] <= end_date_cutoff)]
     # Priority filter
-    #st.selectbox =
+    priority_list = ['','0','1','2','3','4']
+    with col3:
+        chosen_priority = st.selectbox('Filter Prioritas',
+                                options = priority_list)
+    #st.write(filtered_wo_df['Prioritas'][0][0])
+    if chosen_priority != '' or chosen_priority != False:
+        filtered_wo_df = filtered_wo_df[(filtered_wo_df['Prioritas'].str.startswith(chosen_priority))]
+    
+    if department in ['EID', 'MED']:
+        filtered_wo_df = filtered_wo_df[filtered_wo_df[f'{department} Approval'] != 'YES']
     filtered_wo_dict = filtered_wo_df.to_dict(orient = 'index')
-
     wo_list = [""] + list(filtered_wo_dict.keys())
     
     #st.write(wo_options)
@@ -342,20 +356,21 @@ def show_step_1(wo_options,department, shifts, garis_produksi, pic_med, pic_eid)
         wo_index = wo_list.index(saved_wo_label)
     else:
         wo_index = 0
-        # Work Order - use calculated index
-    
+        # Work Order - use calculated index based on saved value
+    #st.write(wo_options)
     wo_label = st.selectbox(
         "Work Order *",
         options=wo_list,
         index=wo_index,  # <-- This makes it show saved value
-        help="Select work order from last 28 days"
+        disabled = False if department in ['EID', 'MED'] else True, # Disable if department not selected or not EID/MED
+        #help="Select work order from last 28 days"
     )
     
         # Display WO details
     if wo_label and wo_label != "":
         wo_data = wo_options[wo_label]
         st.info(f"**PM:** {wo_data.get('PM', 'N/A')}  \n**Request:** {wo_data.get('Request', 'N/A')}")
-        #st.info(wo_data.get('Prioritas', 'N/A')) <- this makes it show the WO priority
+        st.info(wo_data.get('Prioritas', 'N/A')) #<- this makes it show the WO priority
 
     # Garis Produksi index -> moved here to get the default from WO value first
     garis_list = [""] + garis_produksi
@@ -1327,7 +1342,7 @@ def submit_to_google_sheet(basic_info, equipment_list):
         # Write to specific range
         start_row = next_row
         end_row = next_row + len(rows_to_add) - 1
-        range_notation = f"A{start_row}:Z{end_row}"
+        range_notation = f"A{start_row}:AA{end_row}"
         
         data_sheet.update(range_notation, rows_to_add) #type: ignore
         

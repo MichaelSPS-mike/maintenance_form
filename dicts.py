@@ -11,7 +11,7 @@ class location_code_dict():
     def sub_area(self):
         self.sub_area = {# type: ignore
             "APPR" : "Approach",
-            "BOIL" : "Boiler",
+            "BSYS" : "BoilerSystem",
             "BROK" : "Broke",
             "CFAN" : "CoolingFan",
             "CCUT" : "CoreCutting",
@@ -33,7 +33,9 @@ class location_code_dict():
             "UNWI" : "Unwind",
             "WSYS" : "WaterSystem",
             "WIRE" : "Wire",
-            "WRAP" : "Wrapping"
+            "WRAP" : "Wrapping",
+            "ASYS" : "AirSystem",
+            "ISYS" : "IPALSystem"
         } 
         return self.sub_area
     def bagian(self):
@@ -43,6 +45,7 @@ class location_code_dict():
             "BLIN" : "Blindreel",
             "BOIL" : "Boiler",
             "BRAK" : "Brake",
+            "FWAT" : "FreshWater",
             "CGRA" : "ChainGrate",
             "CHES" : "Chest",
             "CWAT" : "ClearWater",
@@ -50,6 +53,7 @@ class location_code_dict():
             "CTAN" : "CondensateTank",
             "CNVY" : "Conveyor",
             "CYCL" : "Cyclone",
+            "XHDC" : "HDC",
             "DEAI" : "Deairator",
             "DEFL" : "Deflaker",
             "DESU" : "Desuperheater",
@@ -64,12 +68,13 @@ class location_code_dict():
             "VIBS" : "Fine/VibrationScreen",
             "FREG" : "FlowRegulator",
             "FORM" : "FormingArea",
-            "FWAT" : "FreshWater",
-            "XHDC" : "HDC",
+            "ATAN" : "AirTank",
+            "CYCL" : "Cyclone",
             "HEAD" : "Headbox",
             "HEEX" : "HeatExchanger",
             "HOOD" : "Hood",
             "HOOK" : "Hook",
+            "KOMP" : "Kompresor",
             "KROF" : "Krofta",
             "LINE" : "Line",
             "MCHE" : "MachineChest",
@@ -79,6 +84,7 @@ class location_code_dict():
             "PARM" : "PrimaryArmSystem",
             "PTAN" : "PulpTank",
             "PUMP" : "Pump",
+            "PURI" : "Purifier",
             "PROL" : "PushRoll",
             "REFN" : "Refiner",
             "RTAN" : "RejectTank",
@@ -87,7 +93,8 @@ class location_code_dict():
             "SVAL" : "SafetyValve",
             "XSAW" : "Saw",
             "SWEI" : "ScaleWeight",
-            "SCRB" : "Scrub",
+            "SPMP" : "ScrewPump",
+            "SCRB" : "Scrubber",
             "SARM" : "SecondaryArmSystem",
             "SOPR" : "ShoePress",
             "SHOW" : "Shower",
@@ -109,40 +116,40 @@ class location_code_dict():
             "WWAT" : "WhiteWater",
             "WGRO" : "WireGuideRope",
             "WROL" : "WireRoll",
-            "YANK" : "Yankee"
+            "YANK" : "Yankee",
         } 
         return self.bagian
     
 class equipment_code_dict():
     def divisi(self):
         self.divisi = { # type: ignore
-            "ROLL" : "Roll",
-            "CONT" : "Container",
-            "PUMP" : "Pump",
-            "LINE" : "Line",
-            "CTRL" : "Control",
-            "HAND" : "Handling",
-            "SCRN" : "Screen",
-            "XFAN" : "Fan",
-            "BLAD" : "Blade",
-            "HEEX" : "HeatExchanger",
             "AGIT" : "Agitator",
-            "SHOW" : "Shower",
-            "VACM" : "Vacuum",
-            "REFN" : "Refiner",
+            "BELT" : "Belt",
+            "BLAD" : "Blade",
+            "CONT" : "Container",
+            "CTRL" : "Control",
             "DEFL" : "Deflaker",
-            "SPRS" : "ShoePress",
-            "SARM" : "SecondaryArm",
+            "XFAN" : "Fan",
+            "HAND" : "Handling",
+            "HEEX" : "HeatExchanger",
+            "LINE" : "Line",
             "PARM" : "PrimaryArm",
-            "BELT" : "Belt"
+            "PUMP" : "Pump",
+            "REFN" : "Refiner",
+            "ROLL" : "Roll",
+            "SCRN" : "Screen",
+            "SARM" : "SecondaryArm",
+            "SPRS" : "ShoePress",
+            "SHOW" : "Shower",
+            "VACM" : "Vacuum"
         }
         return self.divisi
     def subdivisi(self):
         self.subdivisi = { # type: ignore
             "DROL" : "DriveRoll",
-            "IROL" : "IdleRoll",
             "SROL" : "StretcherRoll",
             "EROL" : "PressRoll",
+            "IROL" : "IdleRoll",
             "UROL" : "PushRoll",
             "WTNK" : "WaterTank",
             "PTNK" : "PulpTank",
@@ -151,7 +158,6 @@ class equipment_code_dict():
             "CTNK" : "ChemicalTank",
             "PUMP" : "Pump",
             "FPMP" : "FanPump",
-            "SPMP" : "Spraypump",
             "OPMP" : "OilPump",
             "IPMP" : "InjectionPump",
             "WLIN" : "WaterLine",
