@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from typing import Any
 import streamlit_cookies_manager as scm
 import streamlit.components.v1 as components
-from dicts import location_code_dict, equipment_code_dict
 
 
 # Page config
@@ -571,7 +570,7 @@ def show_step_2_form(configs, cookies):
     if not is_editing:
             draft = st.session_state.step_2_draft
 
-            equipment_id_default      = draft.get('equipment_id', '')
+            equipment_id_default      = draft.get('equipment_id_trouble', '')
             location_id_default       = draft.get('location_id', '')
             area_default              = draft.get('area', '')
             sub_area_default          = draft.get('sub_area', '')
@@ -591,7 +590,7 @@ def show_step_2_form(configs, cookies):
     else:
             editing_eq = st.session_state.equipment_list[st.session_state.editing_index]
             # Editing mode: read from the saved equipment entry
-            equipment_id_default      = editing_eq['equipment_id']
+            equipment_id_default      = editing_eq['equipment_id_trouble']
             location_id_default       = editing_eq['location_id']
             area_default              = editing_eq['area']
             sub_area_default          = editing_eq['sub_area']
@@ -644,8 +643,14 @@ def show_step_2_form(configs, cookies):
     # ============================================
     
     st.subheader("🔧 Equipment Information")
-    equipment_id = st.text_input(
-            "Equipment ID (Optional)", 
+    equipment_id_trouble = st.text_input(
+            "Equipment ID yang bermasalah (Optional)", 
+            value=equipment_id_default,
+            max_chars=34,
+            help="Format: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ (34 characters)"
+        )
+    equipment_id_replacement = st.text_input(
+            "Equipment ID pengganti (Optional)", 
             value=equipment_id_default,
             max_chars=34,
             help="Format: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ (34 characters)"
@@ -664,8 +669,8 @@ def show_step_2_form(configs, cookies):
     if is_editing and editing_eq['area'] in areas: #type: ignore
         area_index = areas.index(editing_eq['area']) + 1 #type: ignore
     elif location_id:
-        parsed_area = str(location_id).split('.')[4] #The area code from location ID
-        named_area = location_code_dict().area()[parsed_area] #type: ignore
+        parsed_area_code = str(location_id).split('.')[4] #The area code from location ID
+        named_area = dep_df[dep_df['Area_Code'] == parsed_area_code]['Area'].values[0] #type: ignore
         area_index = areas.index(named_area) + 1
     else:
         area_index = 0
@@ -681,8 +686,8 @@ def show_step_2_form(configs, cookies):
             sub_area_index = sub_areas.index(editing_eq['sub_area']) + 1 #type: ignore
         elif location_id:
             try:
-                parsed_sub_area = str(location_id).split('.')[5] #The sub area code from location ID
-                named_sub_area = location_code_dict().sub_area()[parsed_sub_area] #type: ignore
+                parsed_sub_area_code = str(location_id).split('.')[5] #The sub area code from location ID
+                named_sub_area = dep_df[dep_df['Sub Area_Code'] == parsed_sub_area_code]['Sub Area'].values[0] #type: ignore
                 sub_area_index = sub_areas.index(named_sub_area) + 1
             except Exception as E:
                 st.info('Location ID tidak cocok dengan pilihan area.')
@@ -720,8 +725,8 @@ def show_step_2_form(configs, cookies):
                 bagian_index = 0
         elif location_id:
             try:
-                parsed_bagian = str(location_id).split('.')[6] #The bagian code from location ID
-                named_bagian = location_code_dict().bagian()[parsed_bagian] #type: ignore
+                parsed_bagian_code = str(location_id).split('.')[6] #The bagian code from location ID
+                named_bagian = dep_df[dep_df["Bagian_Code"] == parsed_bagian_code]["Bagian"].values[0] #type: ignore
                 bagian_index = bagian_options.index(named_bagian)
             except:
                 st.info('Location ID tidak cocok dengan pilihan sub area')
@@ -882,7 +887,8 @@ def show_step_2_form(configs, cookies):
 
         # Collect every widget's current value into a single dict
         new_draft = {
-            'equipment_id':           equipment_id           if equipment_id           else '',
+            'equipment_id_trouble':           equipment_id_trouble           if equipment_id_trouble           else '',
+            'equipment_id_replacement':       equipment_id_replacement       if equipment_id_replacement       else '',
             'location_id':            location_id            if location_id            else '',
             'area':                   area                   if area                   else '',
             'sub_area':               sub_area               if sub_area               else '',
@@ -947,17 +953,26 @@ def show_step_2_form(configs, cookies):
                 if not beres_val or beres_val == "":
                     errors.append("❌ Beres? is required")
                 
-                if equipment_id and equipment_id.strip() != "":
+                if equipment_id_trouble and equipment_id_trouble.strip() != "":
                     import re
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
-                    if not re.match(pattern, equipment_id):
-                        errors.append("❌ Equipment ID format invalid. Must be: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
-                
+                    if not re.match(pattern, equipment_id_trouble):
+                        errors.append("❌ Equipment ID format invalid. Harus: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+
+                if equipment_id_replacement and equipment_id_replacement.strip() != "":
+                    import re
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
+                    if not re.match(pattern, equipment_id_replacement):
+                        errors.append("❌ Replacement Equipment ID format invalid. Harus: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+                    if equipment_id_trouble and equipment_id_trouble.strip() != "" and equipment_id_replacement and equipment_id_replacement.strip() != "":
+                        if equipment_id_trouble.strip() == equipment_id_replacement.strip():
+                            errors.append("❌ Equipment ID yang bermasalah dan pengganti tidak boleh sama")
+
                 if location_id and location_id.strip() != "":
                     import re
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{3}$'
                     if not re.match(pattern, location_id):
-                        errors.append("❌ Location ID format invalid. Must be: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH")
+                        errors.append("❌ Location ID format invalid. Harus: AAA.BB.CC.DD.EE.FFFF.GGGG.HHH")
 
                 if errors:
                     for error in errors:
@@ -973,7 +988,8 @@ def show_step_2_form(configs, cookies):
                         'alasan_kegagalan': alasan_kegagalan_val,
                         'deskripsi_alasan': deskripsi_alasan,
                         'jenis_maintenance': jenis_maintenance_val,
-                        'equipment_id': equipment_id if equipment_id else "",
+                        'equipment_id_trouble': equipment_id_trouble if equipment_id_trouble else "",
+                        'equipment_id_replacement': equipment_id_replacement if equipment_id_replacement else "",
                         'location_id': location_id if location_id else "",
                         'mesin_mati': mesin_mati_val,
                         'loss_kapasitas': loss_kapasitas if loss_kapasitas is not None else "",
@@ -1014,11 +1030,21 @@ def show_step_2_form(configs, cookies):
                 if not beres_val or beres_val == "":
                     errors.append("❌ Beres? is required")
                 
-                if equipment_id and equipment_id.strip() != "":
+                if equipment_id_trouble and equipment_id_trouble.strip() != "":
                     import re 
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
-                    if not re.match(pattern, equipment_id):
-                        errors.append("❌ Equipment ID format invalid. Must be: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+                    if not re.match(pattern, equipment_id_trouble):
+                        errors.append("❌ Equipment ID format invalid. Harus: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+                
+                if equipment_id_replacement and equipment_id_replacement.strip() != "":
+                    import re 
+                    pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]\.\d{3}\.\d{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{2}$'
+                    if not re.match(pattern, equipment_id_replacement):
+                        errors.append("❌ Replacement Equipment ID format invalid. Harus: AAA.BB.CC.DD.E.FFF.GG.HHHH.IIII.JJ")
+                    if equipment_id_trouble and equipment_id_trouble.strip() != "" and equipment_id_replacement and equipment_id_replacement.strip() != "":
+                        if equipment_id_trouble.strip() == equipment_id_replacement.strip():
+                            errors.append("❌ Equipment ID yang bermasalah dan pengganti tidak boleh sama")
+
                 if location_id and location_id.strip() != "":
                     import re
                     pattern = r'^\d{3}\.\d{2}\.[A-Z]{2}\.\d{2}\.[A-Z]{2}\.[A-Z]{4}\.[A-Z]{4}\.\d{3}$'
@@ -1039,7 +1065,8 @@ def show_step_2_form(configs, cookies):
                         'alasan_kegagalan': alasan_kegagalan_val,
                         'deskripsi_alasan': deskripsi_alasan,
                         'jenis_maintenance': jenis_maintenance_val,
-                        'equipment_id': equipment_id if equipment_id else "",
+                        'equipment_id_trouble': equipment_id_trouble if equipment_id_trouble else "",
+                        'equipment_id_replacement': equipment_id_replacement if equipment_id_replacement else "",
                         'location_id': location_id if location_id else "",
                         'mesin_mati': mesin_mati_val,
                         'loss_kapasitas': loss_kapasitas if loss_kapasitas is not None else "",
@@ -1243,7 +1270,8 @@ def display_submission_summary(basic_info, equipment_list):
             with col1:
                 st.write("**🔧 Technical:**")
                 st.write("• Jenis Maintenance:", eq['jenis_maintenance'])
-                st.write("• Equipment ID:", eq['equipment_id'] or "(empty)")
+                st.write("• Equipment ID Trouble:", eq['equipment_id_trouble'] or "(empty)")
+                st.write("• Equipment ID Replacement:", eq['equipment_id_replacement'] or "(empty)")
                 st.write("• Location ID:", eq['location_id'] or "(empty)")
                 st.write("• Mesin Mati?:", eq['mesin_mati'])
             
@@ -1328,7 +1356,8 @@ def submit_to_google_sheet(basic_info, equipment_list):
                 equipment['deskripsi_alasan'],
                 equipment['jenis_maintenance'],
                 equipment['location_id'],
-                equipment['equipment_id'],
+                equipment['equipment_id_trouble'],
+                equipment['equipment_id_replacement'],
                 equipment['mesin_mati'],
                 durasi_aksi,
                 equipment['loss_kapasitas'],
@@ -1342,7 +1371,7 @@ def submit_to_google_sheet(basic_info, equipment_list):
         # Write to specific range
         start_row = next_row
         end_row = next_row + len(rows_to_add) - 1
-        range_notation = f"A{start_row}:AA{end_row}"
+        range_notation = f"A{start_row}:AB{end_row}"
         
         data_sheet.update(range_notation, rows_to_add) #type: ignore
         
