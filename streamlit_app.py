@@ -47,6 +47,9 @@ def load_all_configs():
     # ============================================
     # This reduces 4 API calls to 1 = ~60% faster
     
+    # Define ranges for all sheets (A:Z to cover all columns, adjust if you have more than Z, but try to keep it tight for performance)
+    # Need to be updated when adding new columns more than Z, but this is more robust than hardcoding exact columns and allows for some growth without code changes
+
     ranges = [
         f"{st.secrets['sheets']['dependent_config']}!A:Z",
         f"{st.secrets['sheets']['independent_config']}!A:Z",
